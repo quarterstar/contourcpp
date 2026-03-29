@@ -1,30 +1,12 @@
 #pragma once
 
+#include <concepts>
 #include <expected>
 #include <optional>
 #include <type_traits>
 #include <utility>
 #include <variant>
 
-// `maybe` macros:
-//
-// These macros are intended to resemble Rust's question mark operator, but with
-// use within in the context of `std::expected` and `std::optional`. The correct
-// overload is picked with a macro router.
-//
-// A "maybe bad value" is `std::optional<T>` or `std::expected<T, E>` or other
-// types with a compatible interface.
-//
-// * First argument: the destination variable name
-// * Second argument (optional): the expression that yields a modified bad value
-//
-// NOTE: Within the second argument, you can use the bad value (if it exists) by
-// referring to
-// `__maybe_error`
-
-/**
- * @brief Internal helper to extract error data from optionals or expecteds.
- */
 template <typename T>
 auto __get_error(T&& container) -> decltype(auto) {
   if constexpr (requires { container.error(); }) {
@@ -55,11 +37,19 @@ public:
   }
 
   template <typename T, typename E>
-  operator std::expected<T, E>(this const Self& self) {
-    if (std::holds_alternative<Storage>(self.error_storage)) {
-      return std::unexpected(std::get<Storage>(self.error_storage));
+  operator std::expected<T, E>(this Self&& self) {
+    if (std::holds_alternative<dummy_t>(self.error_storage)) {
+      return std::unexpected(E {});
     }
-    return std::unexpected(E {});
+
+    auto&& value = std::get<Storage>(std::move(self.error_storage));
+    using value_type = std::decay_t<Storage>;
+
+    if constexpr (__is_unexpected<value_type>::value) {
+      return std::forward<value_type>(value);
+    } else {
+      return std::unexpected<E>(std::forward<value_type>(value));
+    }
   }
 };
 
@@ -76,17 +66,17 @@ public:
  */
 #define maybe_1(expr)                                                                              \
   ({                                                                                               \
-    auto&& __res = (expr);                                                                         \
-    if (!__res) {                                                                                  \
-      auto&& __maybe_error = ::__get_error(__res);                                                 \
+    auto&& __result {(expr)};                                                                      \
+    if (!__result) {                                                                               \
+      auto&& __maybe_error = ::__get_error(__result);                                              \
       using __maybe_error_type = std::decay_t<decltype(__maybe_error)>;                            \
-      if constexpr (requires { __res.error(); }) {                                                 \
-        return ::__maybe_failure_proxy<__maybe_error_type>(__res.error());                         \
+      if constexpr (requires { __result.error(); }) {                                              \
+        return ::__maybe_failure_proxy<__maybe_error_type>(__result.error());                      \
       } else {                                                                                     \
         return ::__maybe_failure_proxy<__maybe_error_type>();                                      \
       }                                                                                            \
     }                                                                                              \
-    *std::move(__res);                                                                             \
+    *std::move(__result);                                                                          \
   })
 
 /**
@@ -100,10 +90,10 @@ public:
  */
 #define maybe_2(expr, fallback)                                                                    \
   ({                                                                                               \
-    auto&& __res = (expr);                                                                         \
-    if (!__res) {                                                                                  \
-      [[maybe_unused]] auto&& __maybe_error = ::__get_error(__res);                                \
+    auto&& __result {(expr)};                                                                      \
+    if (!__result) {                                                                               \
+      [[maybe_unused]] auto&& __maybe_error = ::__get_error(__result);                             \
       return (fallback);                                                                           \
     }                                                                                              \
-    *std::move(__res);                                                                             \
+    *std::move(__result);                                                                          \
   })
