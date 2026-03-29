@@ -8,6 +8,15 @@
 #include <variant>
 
 template <typename T>
+struct __is_expected : std::false_type {};
+
+template <typename E>
+struct __is_expected<std::unexpected<E>> : std::true_type {};
+
+template <typename T, typename E>
+struct __is_expected<std::expected<T, E>> : std::true_type {};
+
+template <typename T>
 auto __get_error(T&& container) -> decltype(auto) {
   if constexpr (requires { container.error(); }) {
     return std::forward<T>(container).error();
@@ -45,7 +54,7 @@ public:
     auto&& value = std::get<Storage>(std::move(self.error_storage));
     using value_type = std::decay_t<Storage>;
 
-    if constexpr (__is_unexpected<value_type>::value) {
+    if constexpr (__is_expected<value_type>::value) {
       return std::forward<value_type>(value);
     } else {
       return std::unexpected<E>(std::forward<value_type>(value));
@@ -93,7 +102,8 @@ public:
     auto&& __result {(expr)};                                                                      \
     if (!__result) {                                                                               \
       [[maybe_unused]] auto&& __maybe_error = ::__get_error(__result);                             \
-      return (fallback);                                                                           \
+      using __fallback_type = std::decay_t<decltype(fallback)>;                                    \
+      return ::__maybe_failure_proxy<__fallback_type>(fallback);                                   \
     }                                                                                              \
     *std::move(__result);                                                                          \
   })
