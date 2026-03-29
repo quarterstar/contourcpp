@@ -1,0 +1,69 @@
+BasedOnStyle: LLVM
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+AllowShortIfStatementsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortCaseLabelsOnASingleLine: false
+ColumnLimit: 100
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignAfterOpenBracket: BlockIndent
+BreakBeforeBraces: Attach # K&R / same-line braces
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  IndentBraces: false
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInAngles: false
+SpaceAfterCStyleCast: false
+SpacesBeforeTrailingComments: 1
+PenaltyBreakComment: 200
+ReflowComments: true
+SortIncludes: true
+IncludeBlocks: Preserve
+IncludeCategories:
+  - Regex: '^<.*>'
+    Priority: 1
+  - Regex: '^"'
+    Priority: 2
+ContinuationIndentWidth: 2
+
+# Pointers & references attached to the type (int* p)
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Template and long declaration handling
+AlwaysBreakTemplateDeclarations: true
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackParameters: false
+BinPackArguments: false
+
+# Control formatting of macros & preprocessor directives strictly
+IndentPPDirectives: AfterHash
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+
+# Empty line handling
+MaxEmptyLinesToKeep: 1
+
+SpaceBeforeCpp11BracedList: true
+
+StatementMacros:
+  - INTERFACE_BEGIN
+  - INTERFACE_END
+
+QualifierAlignment: Left
+
+Language: Cpp
+
