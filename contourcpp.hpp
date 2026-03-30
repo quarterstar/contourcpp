@@ -156,7 +156,7 @@ __maybe_failure_proxy(T&&) -> __maybe_failure_proxy<std::decay_t<T>>;
   ({                                                                                               \
     auto&& __result {(expr)};                                                                      \
     if (!__result) {                                                                               \
-      [[maybe_unused]] auto&& __e = ::__get_error(__result);                                       \
+      [[maybe_unused]] auto&& __e {::__get_error(__result)};                                       \
       return ::__maybe_failure_proxy {__get_result(fallback, __e)};                                \
     }                                                                                              \
     ::__deref_or_void(std::move(__result));                                                        \
