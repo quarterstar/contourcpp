@@ -50,6 +50,12 @@ auto __get_result(F&& fallback, T&& error) -> decltype(auto) {
   }
 }
 
+template <typename T>
+concept __contextual_bool = requires(T&& v) { static_cast<bool>(std::forward<T>(v)); };
+
+template <typename T>
+concept __referencable = std::is_reference_v<std::add_lvalue_reference_t<T>>;
+
 template <typename Storage>
 struct __maybe_failure_proxy {
 private:
@@ -57,12 +63,12 @@ private:
 
 public:
   struct dummy_t {};
-  std::variant<dummy_t, Storage> error_storage;
+  std::variant<dummy_t, Storage> value;
 
-  __maybe_failure_proxy() : error_storage(dummy_t {}) {
+  __maybe_failure_proxy() : value {dummy_t {}} {
   }
 
-  __maybe_failure_proxy(Storage e) : error_storage(std::move(e)) {
+  __maybe_failure_proxy(Storage e) : value {std::move(e)} {
   }
 
   template <typename T>
@@ -72,11 +78,11 @@ public:
 
   template <typename T, typename E>
   operator std::expected<T, E>(this Self&& self) {
-    if (std::holds_alternative<dummy_t>(self.error_storage)) {
+    if (std::holds_alternative<dummy_t>(self.value)) {
       return std::unexpected(E {});
     }
 
-    auto&& value = std::get<Storage>(std::move(self.error_storage));
+    auto&& value = std::get<Storage>(std::move(self.value));
     using value_type = std::decay_t<Storage>;
 
     if constexpr (__is_expected<value_type>::value) {
@@ -86,6 +92,9 @@ public:
     }
   }
 };
+
+template <typename T>
+__maybe_failure_proxy(T&&) -> __maybe_failure_proxy<std::decay_t<T>>;
 
 /// @brief Macro router to support different argument counts.
 #define GET_maybe_MACRO(_1, _2, NAME, ...) NAME
@@ -99,17 +108,10 @@ public:
   ({                                                                                               \
     auto&& __result {(expr)};                                                                      \
     if (!__result) {                                                                               \
-      auto&& __maybe_error = ::__get_error(__result);                                              \
-      using __maybe_error_type = std::decay_t<decltype(__maybe_error)>;                            \
-      if constexpr (requires { __result.error(); }) {                                              \
-        return ::__maybe_failure_proxy<__maybe_error_type>(__result.error());                      \
-      } else {                                                                                     \
-        return ::__maybe_failure_proxy<__maybe_error_type>();                                      \
-      }                                                                                            \
+      return ::__maybe_failure_proxy {::__get_error(__result)};                                    \
     }                                                                                              \
     using __container_type = std::decay_t<decltype(__result)>;                                     \
-    using __inner_type = typename __container_type::value_type;                                    \
-    if constexpr (std::is_void_v<__inner_type>) {                                                  \
+    if constexpr (std::is_void_v<typename __container_type::value_type>) {                         \
       (void)0;                                                                                     \
     } else {                                                                                       \
       *std::move(__result);                                                                        \
@@ -129,13 +131,10 @@ public:
     auto&& __result {(expr)};                                                                      \
     if (!__result) {                                                                               \
       [[maybe_unused]] auto&& __e = ::__get_error(__result);                                       \
-      auto&& __fallback_result {__get_result(fallback, __e)};                                      \
-      using __fallback_type = std::decay_t<decltype(__fallback_result)>;                           \
-      return ::__maybe_failure_proxy<__fallback_type>(__fallback_result);                          \
+      return ::__maybe_failure_proxy {__get_result(fallback, __e)};                                \
     }                                                                                              \
     using __container_type = std::decay_t<decltype(__result)>;                                     \
-    using __inner_type = typename __container_type::value_type;                                    \
-    if constexpr (std::is_void_v<__inner_type>) {                                                  \
+    if constexpr (std::is_void_v<typename __container_type::value_type>) {                         \
       (void)0;                                                                                     \
     } else {                                                                                       \
       *std::move(__result);                                                                        \
