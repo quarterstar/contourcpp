@@ -1,5 +1,32 @@
 #pragma once
 
+// ====================================================
+// ContourCpp - Bringing fuctional programming into C++
+// Version INDEV
+// Made by Quarterstar
+// ----------------------------------------------------
+//
+// Copyright (c) 2026 quarterstar
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// ====================================================
+
 #include <concepts>
 #include <expected>
 #include <optional>
@@ -72,14 +99,7 @@ private:
   using Self = __maybe_failure_proxy;
 
 public:
-  struct dummy_t {};
-  std::variant<dummy_t, Storage> value;
-
-  __maybe_failure_proxy() : value {dummy_t {}} {
-  }
-
-  __maybe_failure_proxy(Storage e) : value {std::move(e)} {
-  }
+  Storage value;
 
   template <typename T>
   operator std::optional<T>([[maybe_unused]] this const Self& _) {
@@ -88,17 +108,18 @@ public:
 
   template <typename T, typename E>
   operator std::expected<T, E>(this Self&& self) {
-    if (std::holds_alternative<dummy_t>(self.value)) {
-      return std::unexpected(E {});
-    }
-
-    auto&& value = std::get<Storage>(std::move(self.value));
     using value_type = std::decay_t<Storage>;
 
-    if constexpr (__is_expected<value_type>::value) {
-      return std::forward<value_type>(value);
+    if constexpr (std::is_same_v<value_type, std::nullptr_t>) {
+      static_assert(
+        std::default_initializable<E>,
+        "E must be default-initializable to convert from optional failure."
+      );
+      return std::unexpected(E {});
+    } else if constexpr (__is_expected<value_type>::value) {
+      return std::forward<value_type>(self.value);
     } else {
-      return std::unexpected<E>(std::forward<value_type>(value));
+      return std::unexpected<E>(std::forward<value_type>(self.value));
     }
   }
 };
