@@ -107,7 +107,13 @@ public:
         return ::__maybe_failure_proxy<__maybe_error_type>();                                      \
       }                                                                                            \
     }                                                                                              \
-    *std::move(__result);                                                                          \
+    using __container_type = std::decay_t<decltype(__result)>;                                     \
+    using __inner_type = typename __container_type::value_type;                                    \
+    if constexpr (std::is_void_v<__inner_type>) {                                                  \
+      (void)0;                                                                                     \
+    } else {                                                                                       \
+      *std::move(__result);                                                                        \
+    }                                                                                              \
   })
 
 /// @brief Case 2: maybe(expression, fallback_expression)
@@ -127,5 +133,11 @@ public:
       using __fallback_type = std::decay_t<decltype(__fallback_result)>;                           \
       return ::__maybe_failure_proxy<__fallback_type>(__fallback_result);                          \
     }                                                                                              \
-    *std::move(__result);                                                                          \
+    using __container_type = std::decay_t<decltype(__result)>;                                     \
+    using __inner_type = typename __container_type::value_type;                                    \
+    if constexpr (std::is_void_v<__inner_type>) {                                                  \
+      (void)0;                                                                                     \
+    } else {                                                                                       \
+      *std::move(__result);                                                                        \
+    }                                                                                              \
   })
