@@ -111,11 +111,13 @@ __maybe_failure_proxy(T&&) -> __maybe_failure_proxy<std::decay_t<T>>;
       return ::__maybe_failure_proxy {::__get_error(__result)};                                    \
     }                                                                                              \
     using __container_type = std::decay_t<decltype(__result)>;                                     \
-    if constexpr (std::is_void_v<typename __container_type::value_type>) {                         \
-      (void)0;                                                                                     \
-    } else {                                                                                       \
-      *std::move(__result);                                                                        \
-    }                                                                                              \
+    ([&] -> auto {                                                                                 \
+      if constexpr (std::is_void_v<__container_type::value_type>) {                                \
+        return;                                                                                    \
+      } else {                                                                                     \
+        return *std::move(__result);                                                               \
+      }                                                                                            \
+    })();                                                                                          \
   })
 
 /// @brief Case 2: maybe(expression, fallback_expression)
@@ -134,9 +136,11 @@ __maybe_failure_proxy(T&&) -> __maybe_failure_proxy<std::decay_t<T>>;
       return ::__maybe_failure_proxy {__get_result(fallback, __e)};                                \
     }                                                                                              \
     using __container_type = std::decay_t<decltype(__result)>;                                     \
-    if constexpr (std::is_void_v<typename __container_type::value_type>) {                         \
-      (void)0;                                                                                     \
-    } else {                                                                                       \
-      *std::move(__result);                                                                        \
-    }                                                                                              \
+    ([&] -> auto {                                                                                 \
+      if constexpr (std::is_void_v<__container_type::value_type>) {                                \
+        return;                                                                                    \
+      } else {                                                                                     \
+        return *std::move(__result);                                                               \
+      }                                                                                            \
+    })();                                                                                          \
   })
