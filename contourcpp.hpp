@@ -4,6 +4,8 @@
 // ContourCpp - Bringing fuctional programming into C++
 // Version INDEV
 // Made by Quarterstar
+// Get a copy of the latest header at:
+// https://github.com/quarterstar/contourcpp
 // ----------------------------------------------------
 //
 // Copyright (c) 2026 quarterstar
