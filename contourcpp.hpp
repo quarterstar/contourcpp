@@ -161,3 +161,19 @@ __maybe_failure_proxy(T&&) -> __maybe_failure_proxy<std::decay_t<T>>;
     }                                                                                              \
     ::__deref_or_void(std::move(__result));                                                        \
   })
+
+// Helpers
+
+#define GET_maybe_twice_MACRO(_1, _2, NAME, ...) NAME
+#define maybe_twice(...)                                                                           \
+  GET_maybe_twice_MACRO(__VA_ARGS__, maybe_twice_2, maybe_twice_1)(__VA_ARGS__)
+
+#define GET_maybe_thrice_MACRO(_1, _2, NAME, ...) NAME
+#define maybe_thrice(...)                                                                          \
+  GET_maybe_thrice_MACRO(__VA_ARGS__, maybe_thrice_2, maybe_thrice_1)(__VA_ARGS__)
+
+#define maybe_twice_1(expr) maybe(maybe(expr))
+#define maybe_twice_2(expr, fallback) maybe(maybe(expr, fallback), fallback)
+
+#define maybe_thrice_1(expr) maybe(maybe(maybe(expr)))
+#define maybe_thrice_2(expr, fallback) maybe(maybe(maybe(expr, fallback), fallback), fallback)
